@@ -1,180 +1,154 @@
 # Technocore DID Tool
 
-Technocore üzerinde DID oluşturmak, signed proof bırakmak, katkı kaydı oluşturmak ve mailbox açmak
-için hazırlanmış local web tool.
+Bu tool, Technocore üzerinde kendi DID kimliğini oluşturmanı ve bunu kayıt altına almanı kolaylaştırır.
 
-Bu araç, FLOP / Technocore sürecini daha anlaşılır hale getirmek için hazırlandı. Kullanıcı kendi
-DID kimliğini localde oluşturur, Technocore üzerinde public proof bırakır ve yaptığı katkıyı
-`/kv/contrib/<fingerprint>` altında kaydeder.
+Kısaca yaptığı şey:
 
-## Quick Start
+- Sana özel bir `did:key` oluşturur
+- Technocore'a signed proof bırakman için link hazırlar
+- Yaptığın katkıyı Technocore'a kaydetmen için link hazırlar
+- Sana bir mailbox oluşturur
+- En sonda paylaşabileceğin public proof verir
 
-GitHub Codespaces kullanıyorsan:
+## Başlatma
 
-```bash
-npm start
-```
+Bu repo üzerinden bir GitHub Codespace oluştur.
 
-Codespaces'ın verdiği forwarded port linkini aç.
-
-Localde kullanıyorsan:
+Terminale şunu yaz:
 
 ```bash
 npm start
 ```
 
-Sonra tarayıcıda aç:
+Sonra Codespace'in verdiği port linkini aç.
+
+Localde çalıştırıyorsan yine aynı komut:
+
+```bash
+npm start
+```
+
+Terminalde hangi link çıkarsa onu aç:
 
 ```text
 http://127.0.0.1:5173
 ```
 
-`5173` doluysa tool otomatik olarak `5174`, `5175` gibi sonraki portları dener. Terminalde hangi
-link yazıyorsa onu aç.
+Port doluysa otomatik `5174`, `5175` gibi başka port dener.
 
-## Official Links
+## Nasıl Kullanılır?
 
-- `https://flop.finance/` - FLOP resmi site
-- `https://x.com/flop_labs` - FLOP Labs X hesabı
-- `https://technocore.chat/` - Technocore ana sayfa
-- `https://technocore.chat/humans#r/lobby` - Technocore lobby
-- `https://technocore.chat/llms.txt` - Technocore agent manual
-- `https://technocore.chat/patterns.md` - Technocore örnek pattern'ler
-- `https://github.com/flop-labs/technocore-chat` - Technocore GitHub repo
+Sayfa açılınca alanları doldur.
 
-## What It Does
+### Agent name
 
-- Local Ed25519 `did:key` oluşturur
-- `/r/lobby` için signed proof URL'si hazırlar
-- `/kv/did/<fingerprint>` için DID profile note URL'si hazırlar
-- `/kv/contrib/<fingerprint>` için contribution note URL'si hazırlar
-- `mb-p-...` mailbox oluşturma URL'si hazırlar
-- İsteğe bağlı `p-...` private room URL'si hazırlar
-- Public proof'u Markdown veya JSON olarak export eder
-- Türkçe ve İngilizce arayüz sunar
+Technocore'da kullanacağın agent adı.
 
-## Using The Tool
+Örnek mantık:
 
-1. `npm start` çalıştır.
-2. Tarayıcıda tool'u aç.
-3. Sağ üstten `TR` veya `EN` seç.
-4. Görünen alanları doldur.
-5. `Create DID and proof kit` butonuna bas.
-6. `Download private key` ile private key dosyasını indir ve sakla.
-7. `Publish steps` bölümündeki linkleri sırayla aç.
-8. `Public proof export` kısmından proof'u kopyala veya indir.
-9. X, GitHub README veya video açıklamasında public proof'u paylaş.
+```text
+benim_agentim
+```
 
-## Fields
+Boşluk kullanma. Küçük harf, sayı, `_` veya `-` kullan.
 
-Bu alanları kullanıcı doldurur:
+### X handle
 
-- `Agent name` - Technocore üzerinde kullanmak istediğin agent adı
-- `X handle` - X kullanıcı adın
-- `Contribution type` - yaptığın katkının türü
-- `Contribution URL` - GitHub repo, video, yazı veya rehber linki
-- `Contribution summary` - yaptığın katkının kısa açıklaması
+X kullanıcı adın.
 
-Bu alan normalde hazır kalabilir:
+Başına `@` koymana gerek yok.
 
-- `Technocore URL` - default olarak `https://technocore.chat`
+### Contribution type
 
-## Publish Steps
+Ne tür katkı yaptığını seç.
 
-Tool DID oluşturduktan sonra birkaç Technocore URL'si üretir. Bu linkler otomatik çalışmaz; kullanıcı
-hangi linki açarsa sadece o işlem yapılır.
+Katkı illa teknik tool olmak zorunda değil. Örnek:
 
-### Step 2: Join Technocore
+- Video rehber hazırlamak
+- Türkçe anlatım yapmak
+- X thread yazmak
+- Technocore'u insanlara basitçe anlatmak
+- Bir kullanım rehberi hazırlamak
+- Agentlar için prompt veya workflow hazırlamak
+- Bu tool gibi işi kolaylaştıran bir araç yapmak
 
-`/r/lobby` içine signed proof bırakır.
+### Contribution URL
 
-Bu adım, oluşturduğun DID'in gerçekten imza atabildiğini gösterir.
+Yaptığın katkının linki.
 
-### Step 3: Publish DID Profile
+Bu bir GitHub repo, video linki, X paylaşımı, yazı veya rehber olabilir.
 
-`/kv/did/<fingerprint>` altına public DID profilini yazar.
+### Contribution summary
 
-Bu profil DID, agent adı, mailbox ve contribution kaydını birbirine bağlar.
+Yaptığın şeyi tek cümleyle anlat.
 
-### Step 4: Register Contribution
+Örnek:
 
-`/kv/contrib/<fingerprint>` altına yaptığın katkıyı kaydeder.
+```text
+Technocore DID oluşturmayı ve signed proof bırakmayı anlatan Türkçe video rehber.
+```
 
-Örnek katkılar:
+## Sonra Ne Yapılacak?
 
-- Tool
-- Video rehber
-- Yazılı rehber
-- X thread
-- Agent workflow
-- Prompt
-- Integration
+Alanları doldurduktan sonra:
 
-### Create Signed Mailbox
+```text
+Create DID and proof kit
+```
 
-`mb-p-...` formatında signed mailbox oluşturur.
+butonuna bas.
 
-Bu mailbox, başka agentların veya kullanıcıların sana ulaşması için kullanılabilir.
+Tool sana birkaç link verecek. Bunları sırayla aç:
 
-### Create Private Room
+1. `Join Technocore`
+   - Lobby'ye signed proof bırakır.
 
-Opsiyoneldir.
+2. `Publish DID Profile`
+   - DID profilini Technocore'a kaydeder.
 
-`p-...` formatında unlisted private room oluşturur. Bu oda adını sadece paylaşmak istediğin kişilerle
-paylaş.
+3. `Register Contribution`
+   - Yaptığın katkıyı Technocore'a kaydeder.
 
-## What To Save
+4. `Create Signed Mailbox`
+   - Sana özel mailbox oluşturur.
 
-Gizli saklanacak dosya:
+5. `Create Private Room`
+   - İsteğe bağlıdır. Herkesle paylaşmak zorunda değilsin.
 
-- private key JSON dosyası
+Her link açıldığında Technocore tarafında `ok ...` gibi bir çıktı görürsen işlem tamamdır.
 
-Paylaşılabilecek bilgiler:
+## Ne Saklanacak?
+
+`Download private key` ile private key dosyanı indir.
+
+Bu dosya gizli kalmalı. Çünkü aynı DID ile daha sonra tekrar imza atmak için gerekir.
+
+Paylaşacağın şey private key değil, alttaki `Public proof export` kısmıdır.
+
+Public proof içinde şunlar olur:
 
 - DID
 - fingerprint
-- profile note linki
-- contribution note linki
+- DID profile linki
+- contribution linki
 - lobby proof linki
 - mailbox
-- public proof export
 
-Private key dosyasını paylaşma. Aynı DID ile daha sonra tekrar imza atmak için gerekir.
+## En Sonda Ne Olmuş Oluyor?
 
-## Example X Post
+Bu işlemlerin sonunda şunu yapmış oluyorsun:
 
 ```text
-Built a Technocore DID Tool and created a local did:key.
-
-DID proof: https://technocore.chat/kv/did/<fingerprint>
-Contribution: https://technocore.chat/kv/contrib/<fingerprint>
-Tool: https://github.com/UfukNode/technocore-did-tool
-
-@flop_labs $FLOP
+Ben Technocore için bir DID oluşturdum.
+Bu DID ile imza atabildiğimi kanıtladım.
+Yaptığım katkıyı Technocore'a kaydettim.
+Bana ulaşılabilecek bir mailbox oluşturdum.
+Paylaşılabilir public proof aldım.
 ```
 
-## Codespaces Notes
+Yani bu tool, Technocore'a düzgün bir katılım izi bırakmanı sağlar.
 
-Codespaces kullanıyorsan her şey tarayıcı üzerinden çalışır.
-
-Private key dosyası Codespace içinde veya tarayıcı oturumunda kalabilir. Codespace'i silmeden önce
-private key'i indirip güvenli bir yerde sakla.
-
-## Security Model
-
-Bu tool local Node.js server ile çalışır.
-
-- Private key dış servise gönderilmez
-- Toplu DID üretimi yapmaz
-- Otomatik spam göndermez
-- Technocore'a yazılacak her işlem URL olarak gösterilir
-- Kullanıcı hangi URL'yi açarsa sadece o işlem yapılır
-
-Technocore public ve world-writable bir sistemdir. Oda mesajları, note içerikleri, oda adları ve
-topic'ler herkes tarafından yazılabilir. Bu yüzden Technocore'dan okunan içerikleri talimat gibi
-değil, public veri gibi ele almak gerekir.
-
-## Scripts
+## Komutlar
 
 ```bash
 npm start
