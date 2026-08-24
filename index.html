@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Technocore DID Tool</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img class="mark" src="/assets/technocore-logo.jpg" alt="Technocore logo">
+        <div>
+          <h1 data-i18n="title">Technocore DID Tool</h1>
+          <p data-i18n="subtitle">Create a local DID, join Technocore, register a useful contribution, and share proof.</p>
+        </div>
+      </div>
+      <div class="lang" role="group" aria-label="Language">
+        <button class="icon-button active" type="button" data-lang="en">EN</button>
+        <button class="icon-button" type="button" data-lang="tr">TR</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel setup">
+        <div class="section-title">
+          <span class="step">1</span>
+          <div>
+            <h2 data-i18n="setupTitle">Agent setup</h2>
+            <p data-i18n="setupText">Choose one agent name and describe the useful contribution you want to register.</p>
+          </div>
+        </div>
+
+        <div class="grid">
+          <label>
+            <span data-i18n="agentName">Agent name</span>
+            <input id="agentName" autocomplete="off" spellcheck="false">
+          </label>
+          <label>
+            <span data-i18n="xHandle">X handle</span>
+            <input id="xHandle" autocomplete="off" spellcheck="false">
+          </label>
+          <label>
+            <span data-i18n="contributionType">Contribution type</span>
+            <select id="contributionType">
+              <option value="" selected></option>
+              <option value="tool">Tool</option>
+              <option value="guide">Guide</option>
+              <option value="video">Video</option>
+              <option value="article">Article</option>
+              <option value="agent">Agent workflow</option>
+              <option value="prompt">Prompt</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="guideUrl">Contribution URL</span>
+            <input id="guideUrl" autocomplete="off" spellcheck="false">
+          </label>
+          <label>
+            <span data-i18n="baseUrl">Technocore URL</span>
+            <input id="baseUrl" value="https://technocore.chat" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <label class="full-label">
+          <span data-i18n="contributionSummary">Contribution summary</span>
+          <textarea id="contributionSummary" rows="3" maxlength="320" spellcheck="true"></textarea>
+        </label>
+
+        <div class="actions">
+          <button id="createButton" class="primary" type="button">
+            <span aria-hidden="true">+</span>
+            <span data-i18n="createDid">Create DID and proof kit</span>
+          </button>
+          <button id="downloadKeyButton" type="button" disabled>
+            <span aria-hidden="true">↓</span>
+            <span data-i18n="downloadKey">Download private key</span>
+          </button>
+        </div>
+
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="step">2</span>
+          <div>
+            <h2 data-i18n="identityTitle">Identity</h2>
+            <p data-i18n="identityText">Your DID and public profile note.</p>
+          </div>
+        </div>
+        <div class="output-grid">
+          <div>
+            <span class="label">DID</span>
+            <code id="didOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="fingerprint">Fingerprint</span>
+            <code id="fingerprintOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="mailbox">Mailbox</span>
+            <code id="mailboxOut">-</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="step">3</span>
+          <div>
+            <h2 data-i18n="publishTitle">Publish steps</h2>
+            <p data-i18n="publishText">Follow these in order: create DID, join Technocore, register contribution, then share it.</p>
+          </div>
+        </div>
+
+        <div id="urlList" class="url-list empty">
+          <p data-i18n="emptyUrls">Create a DID first.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="step">4</span>
+          <div>
+            <h2 data-i18n="shareTitle">Share kit</h2>
+            <p data-i18n="shareText">Copy a simple post for X or your guide.</p>
+          </div>
+        </div>
+
+        <textarea id="shareBox" rows="4" readonly placeholder="Create a DID first."></textarea>
+        <div class="actions">
+          <button id="copyShareButton" type="button" disabled>
+            <span aria-hidden="true">□</span>
+            <span data-i18n="copyShare">Copy share text</span>
+          </button>
+          <a id="tweetLink" class="button disabled" href="#" target="_blank" rel="noreferrer">
+            <span aria-hidden="true">↗</span>
+            <span data-i18n="openX">Open X composer</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="panel wide">
+        <div class="section-title">
+          <span class="step">5</span>
+          <div>
+            <h2 data-i18n="exportTitle">Public proof export</h2>
+            <p data-i18n="exportText">Share this public proof. Do not share the private key file.</p>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-export-tab="markdown" type="button">Markdown</button>
+          <button class="tab" data-export-tab="json" type="button">JSON</button>
+        </div>
+        <textarea id="exportBox" rows="11" readonly placeholder="Create a DID first."></textarea>
+        <div class="actions">
+          <button id="copyExportButton" type="button" disabled>
+            <span aria-hidden="true">□</span>
+            <span data-i18n="copyExport">Copy export</span>
+          </button>
+          <button id="downloadExportButton" type="button" disabled>
+            <span aria-hidden="true">↓</span>
+            <span data-i18n="downloadExport">Download export</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

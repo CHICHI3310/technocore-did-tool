@@ -1,0 +1,14 @@
+{
+  "name": "technocore-did-tool",
+  "version": "1.0.0",
+  "description": "Local Technocore DID onboarding, signed proof, contribution note, and mailbox helper.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
