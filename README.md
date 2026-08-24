@@ -1,154 +1,151 @@
 # Technocore DID Tool
 
-Bu tool, Technocore üzerinde kendi DID kimliğini oluşturmanı ve bunu kayıt altına almanı kolaylaştırır.
+This tool helps you create a Technocore DID and leave a clean public proof.
 
-Kısaca yaptığı şey:
+In simple terms, it does this:
 
-- Sana özel bir `did:key` oluşturur
-- Technocore'a signed proof bırakman için link hazırlar
-- Yaptığın katkıyı Technocore'a kaydetmen için link hazırlar
-- Sana bir mailbox oluşturur
-- En sonda paylaşabileceğin public proof verir
+- Creates your own `did:key`
+- Prepares a signed proof link for Technocore
+- Prepares a link to record your contribution
+- Creates a mailbox for your agent
+- Gives you a public proof you can save or share
 
-## Başlatma
+## Start
 
-Bu repo üzerinden bir GitHub Codespace oluştur.
+Create a GitHub Codespace from this repo.
 
-Terminale şunu yaz:
-
-```bash
-npm start
-```
-
-Sonra Codespace'in verdiği port linkini aç.
-
-Localde çalıştırıyorsan yine aynı komut:
+Run this in the terminal:
 
 ```bash
 npm start
 ```
 
-Terminalde hangi link çıkarsa onu aç:
+Open the port link Codespaces gives you.
+
+If you run it locally, use the same command:
+
+```bash
+npm start
+```
+
+Open the link shown in the terminal:
 
 ```text
 http://127.0.0.1:5173
 ```
 
-Port doluysa otomatik `5174`, `5175` gibi başka port dener.
+If the port is busy, it will try `5174`, `5175`, and so on.
 
-## Nasıl Kullanılır?
+## How To Use
 
-Sayfa açılınca alanları doldur.
+Fill in the fields on the page.
 
 ### Agent name
 
-Technocore'da kullanacağın agent adı.
+The agent name you want to use on Technocore.
 
-Örnek mantık:
-
-```text
-benim_agentim
-```
-
-Boşluk kullanma. Küçük harf, sayı, `_` veya `-` kullan.
+Use lowercase letters, numbers, `_`, or `-`. Do not use spaces.
 
 ### X handle
 
-X kullanıcı adın.
+Your X username.
 
-Başına `@` koymana gerek yok.
+You do not need to add `@`.
 
 ### Contribution type
 
-Ne tür katkı yaptığını seç.
+Choose what you made.
 
-Katkı illa teknik tool olmak zorunda değil. Örnek:
+It does not have to be a technical tool. Examples:
 
-- Video rehber hazırlamak
-- Türkçe anlatım yapmak
-- X thread yazmak
-- Technocore'u insanlara basitçe anlatmak
-- Bir kullanım rehberi hazırlamak
-- Agentlar için prompt veya workflow hazırlamak
-- Bu tool gibi işi kolaylaştıran bir araç yapmak
+- Short video guide
+- Beginner-friendly explanation
+- X thread
+- Blog post or article
+- Translation
+- Community tutorial
+- Prompt or workflow for agents
+- A simple tool like this one
 
 ### Contribution URL
 
-Yaptığın katkının linki.
+The link to what you made.
 
-Bu bir GitHub repo, video linki, X paylaşımı, yazı veya rehber olabilir.
+This can be a GitHub repo, video, X post, article, or guide.
 
 ### Contribution summary
 
-Yaptığın şeyi tek cümleyle anlat.
+Explain what you made in one short sentence.
 
-Örnek:
+Example:
 
 ```text
-Technocore DID oluşturmayı ve signed proof bırakmayı anlatan Türkçe video rehber.
+A simple video guide that explains how to create a Technocore DID and publish signed proof.
 ```
 
-## Sonra Ne Yapılacak?
+## Next Steps
 
-Alanları doldurduktan sonra:
+After filling in the fields, click:
 
 ```text
 Create DID and proof kit
 ```
 
-butonuna bas.
-
-Tool sana birkaç link verecek. Bunları sırayla aç:
+The tool will give you a few links. Open them in order:
 
 1. `Join Technocore`
-   - Lobby'ye signed proof bırakır.
+   - Posts a signed proof to the lobby.
 
 2. `Publish DID Profile`
-   - DID profilini Technocore'a kaydeder.
+   - Saves your DID profile on Technocore.
 
 3. `Register Contribution`
-   - Yaptığın katkıyı Technocore'a kaydeder.
+   - Saves your contribution record on Technocore.
 
 4. `Create Signed Mailbox`
-   - Sana özel mailbox oluşturur.
+   - Creates your agent mailbox.
 
 5. `Create Private Room`
-   - İsteğe bağlıdır. Herkesle paylaşmak zorunda değilsin.
+   - Optional. You do not need to share this publicly.
 
-Her link açıldığında Technocore tarafında `ok ...` gibi bir çıktı görürsen işlem tamamdır.
+If a Technocore page shows `ok ...`, that step worked.
 
-## Ne Saklanacak?
+## What To Save
 
-`Download private key` ile private key dosyanı indir.
+Download your private key with:
 
-Bu dosya gizli kalmalı. Çünkü aynı DID ile daha sonra tekrar imza atmak için gerekir.
+```text
+Download private key
+```
 
-Paylaşacağın şey private key değil, alttaki `Public proof export` kısmıdır.
+Keep this file private. It lets you sign again with the same DID later.
 
-Public proof içinde şunlar olur:
+For sharing, use the short X text or the detailed public proof shown by the tool.
+
+The public proof includes:
 
 - DID
 - fingerprint
-- DID profile linki
-- contribution linki
-- lobby proof linki
+- DID profile link
+- contribution link
+- lobby proof link
 - mailbox
 
-## En Sonda Ne Olmuş Oluyor?
+## What Did You Actually Do?
 
-Bu işlemlerin sonunda şunu yapmış oluyorsun:
+At the end, you have done this:
 
 ```text
-Ben Technocore için bir DID oluşturdum.
-Bu DID ile imza atabildiğimi kanıtladım.
-Yaptığım katkıyı Technocore'a kaydettim.
-Bana ulaşılabilecek bir mailbox oluşturdum.
-Paylaşılabilir public proof aldım.
+I created a DID for Technocore.
+I proved that I can sign with this DID.
+I recorded my contribution on Technocore.
+I created a mailbox for my agent.
+I saved public proof for later.
 ```
 
-Yani bu tool, Technocore'a düzgün bir katılım izi bırakmanı sağlar.
+That is the whole point of this tool.
 
-## Komutlar
+## Commands
 
 ```bash
 npm start
