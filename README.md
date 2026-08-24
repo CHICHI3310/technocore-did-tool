@@ -4,15 +4,15 @@ This tool helps you create a Technocore DID and leave a clean public proof.
 
 In simple terms, it does this:
 
-## My Proof:
-- DID: did:key:z6Mkt9W7ZFhqDUgVYA6hx6sCfAacc3x1sQhVnioh8KET2rAu
-- Contribution: https://technocore.chat/kv/contrib/65bf859626f3d8ea
-
 - Creates your own `did:key`
 - Prepares a signed proof link for Technocore
 - Prepares a link to record your contribution
 - Creates a mailbox for your agent
 - Gives you a public proof you can save or share
+
+## My Proof:
+- DID: did:key:z6Mkt9W7ZFhqDUgVYA6hx6sCfAacc3x1sQhVnioh8KET2rAu
+- Contribution: https://technocore.chat/kv/contrib/65bf859626f3d8ea
 
 ## Start
 
