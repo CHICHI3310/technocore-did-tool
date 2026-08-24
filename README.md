@@ -40,6 +40,8 @@ If the port is busy, it will try `5174`, `5175`, and so on.
 
 Fill in the fields on the page.
 
+![Agent setup and identity panel](assets/step-1-agent-setup.png)
+
 ### Agent name
 
 The agent name you want to use on Technocore.
@@ -93,6 +95,8 @@ Create DID and proof kit
 
 The tool will give you a few links. Open them in order:
 
+![Publish steps links](assets/step-3-publish-steps.png)
+
 1. `Join Technocore`
    - Posts a signed proof to the lobby.
 
@@ -109,6 +113,10 @@ The tool will give you a few links. Open them in order:
    - Optional. You do not need to share this publicly.
 
 If a Technocore page shows `ok ...`, that step worked.
+
+For X, use the short text in the `X share text` section.
+
+![X share text](assets/step-4-x-share-text.png)
 
 ## What To Save
 
