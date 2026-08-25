@@ -14,6 +14,7 @@ const i18n = {
     baseUrl: "Technocore URL",
     createDid: "Create DID and proof kit",
     downloadKey: "Download private key",
+    importKey: "Import private key",
     identityTitle: "Identity",
     identityText: "Your DID and public profile note.",
     fingerprint: "Fingerprint",
@@ -57,6 +58,7 @@ const i18n = {
     baseUrl: "Technocore URL",
     createDid: "DID ve proof kit oluştur",
     downloadKey: "Private key indir",
+    importKey: "Private key içe aktar",
     identityTitle: "Kimlik",
     identityText: "DID ve public profile note bilgilerin.",
     fingerprint: "Fingerprint",
@@ -101,6 +103,8 @@ const $ = (selector) => document.querySelector(selector);
 const elements = {
   createButton: $("#createButton"),
   downloadKeyButton: $("#downloadKeyButton"),
+  importKeyButton: $("#importKeyButton"),
+  importKeyInput: $("#importKeyInput"),
   copyShareButton: $("#copyShareButton"),
   copyExportButton: $("#copyExportButton"),
   downloadExportButton: $("#downloadExportButton"),
@@ -156,8 +160,49 @@ async function createKit() {
   }
 }
 
+async function importKey(file) {
+  setBusy(true);
+  try {
+    const imported = JSON.parse(await file.text());
+    if (!imported || typeof imported !== "object" || Array.isArray(imported)) {
+      throw new Error("Private key file is invalid.");
+    }
+    const keys = Object.keys(imported).sort();
+    if (keys.join(",") !== "did,privateKeyJwk,warning" || imported.warning !== TechnocoreBrowser.WARNING) {
+      throw new Error("Only a private key downloaded from this tool can be imported.");
+    }
+    const privateKeyJwk = imported.privateKeyJwk;
+    if (!privateKeyJwk || typeof privateKeyJwk !== "object" || Array.isArray(privateKeyJwk) ||
+      privateKeyJwk.kty !== "OKP" || privateKeyJwk.crv !== "Ed25519" ||
+      typeof privateKeyJwk.x !== "string" || typeof privateKeyJwk.d !== "string") {
+      throw new Error("Private key file is invalid.");
+    }
+    const derivedDid = TechnocoreBrowser.didFromPublicJwk(privateKeyJwk);
+    if (derivedDid !== imported.did) throw new Error("DID does not match the private key.");
+
+    state.key = privateKeyJwk;
+    state.kit = await TechnocoreBrowser.buildKit({
+      privateKeyJwk,
+      agentName: inputValue("agentName"),
+      xHandle: inputValue("xHandle"),
+      contributionType: inputValue("contributionType"),
+      guideUrl: inputValue("guideUrl"),
+      contributionSummary: inputValue("contributionSummary"),
+      baseUrl: inputValue("baseUrl"),
+    });
+    renderKit();
+    showToast(t("created"));
+  } catch (error) {
+    showToast(error instanceof SyntaxError ? "Private key file is not valid JSON." : error.message);
+  } finally {
+    elements.importKeyInput.value = "";
+    setBusy(false);
+  }
+}
+
 function setBusy(isBusy) {
   elements.createButton.disabled = isBusy;
+  elements.importKeyButton.disabled = isBusy;
 }
 
 function urlRows() {
@@ -246,6 +291,11 @@ function showToast(message) {
 }
 
 elements.createButton.addEventListener("click", createKit);
+elements.importKeyButton.addEventListener("click", () => elements.importKeyInput.click());
+elements.importKeyInput.addEventListener("change", () => {
+  const [file] = elements.importKeyInput.files;
+  if (file) importKey(file);
+});
 elements.downloadKeyButton.addEventListener("click", () => {
   if (!state.key || !state.kit) return;
   download(

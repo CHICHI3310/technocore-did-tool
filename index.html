@@ -76,6 +76,11 @@
             <span aria-hidden="true">↓</span>
             <span data-i18n="downloadKey">Download private key</span>
           </button>
+          <button id="importKeyButton" type="button">
+            <span aria-hidden="true">↑</span>
+            <span data-i18n="importKey">Import private key</span>
+          </button>
+          <input id="importKeyInput" type="file" accept="application/json,.json" hidden>
         </div>
 
       </section>
@@ -168,6 +173,7 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/lib/technocore-browser.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
