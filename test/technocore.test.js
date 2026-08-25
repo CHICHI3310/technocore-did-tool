@@ -2,7 +2,9 @@
 
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
+const fs = require("node:fs");
 const test = require("node:test");
+const vm = require("node:vm");
 const {
   buildKit,
   cleanText,
@@ -51,7 +53,12 @@ test("builds one profile note and signed proof URLs", () => {
   assert.equal(kit.agentName, "ufuk_agent");
   assert.match(kit.mailbox, /^mb-p-[a-f0-9]{24}$/);
   assert.match(kit.privateRoom, /^p-[a-f0-9]{24}$/);
-  assert.match(kit.profileNote.url, /^https:\/\/technocore\.chat\/kv\/did\//);
+  assert.equal(kit.profileNote.ns, `did-${kit.fingerprint.slice(0, 2)}`);
+  assert.equal(kit.profileNote.key, kit.fingerprint.slice(2));
+  assert.equal(
+    kit.profileNote.url,
+    `https://technocore.chat/kv/did-${kit.fingerprint.slice(0, 2)}/${kit.fingerprint.slice(2)}/set/${encodeURIComponent(kit.profileNote.value)}`,
+  );
   assert.ok(kit.profileNote.url.includes("https%3A%2F%2Fexample.com%2Fguide"));
   assert.ok(!kit.profileNote.url.includes("https%3A%252F%252Fexample.com"));
   assert.match(kit.contributionNote.url, /^https:\/\/technocore\.chat\/kv\/contrib\//);
@@ -86,3 +93,45 @@ test("derives the public proof from a private JWK", () => {
   assert.equal(proof.did, identity.did);
   assert.equal(proof.fingerprint, identity.fingerprint);
 });
+
+test("rebuilds a kit in the browser without creating a new DID", async () => {
+  const context = { window: {}, crypto: crypto.webcrypto, atob, btoa, TextEncoder, URL };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync("lib/technocore-browser.js", "utf8"), context);
+  const identity = createDid();
+  const kit = await context.window.TechnocoreBrowser.buildKit({
+    privateKeyJwk: identity.privateKeyJwk,
+    agentName: "restore_test",
+    contributionType: "tool",
+    contributionSummary: "Browser-only restore test.",
+    baseUrl: "https://technocore.chat",
+    nonceBase: 1000,
+  });
+
+  assert.equal(kit.did, identity.did);
+  assert.equal(kit.fingerprint, identity.fingerprint);
+  assert.equal(kit.profileNote.ns, `did-${identity.fingerprint.slice(0, 2)}`);
+  assert.equal(kit.profileNote.key, identity.fingerprint.slice(2));
+  assert.match(kit.lobbyProof.url, /\/r\/lobby\/say-signed\//);
+});
+
+  test("creates a browser DID and uses the sharded profile namespace", async () => {
+    const context = { window: {}, crypto: crypto.webcrypto, atob, btoa, TextEncoder, URL };
+    vm.createContext(context);
+    vm.runInContext(fs.readFileSync("lib/technocore-browser.js", "utf8"), context);
+    const identity = await context.window.TechnocoreBrowser.createDid();
+    const kit = await context.window.TechnocoreBrowser.buildKit({
+      privateKeyJwk: identity.privateKeyJwk,
+      agentName: "create_test",
+      contributionType: "tool",
+      contributionSummary: "Browser-only create test.",
+      baseUrl: "https://technocore.chat",
+      nonceBase: 1000,
+    });
+
+    assert.equal(kit.did, identity.did);
+    assert.equal(kit.fingerprint, identity.fingerprint);
+    assert.equal(kit.profileNote.ns, `did-${identity.fingerprint.slice(0, 2)}`);
+    assert.equal(kit.profileNote.key, identity.fingerprint.slice(2));
+    assert.match(kit.contributionNote.url, /\/kv\/contrib\/[a-f0-9]{16}\/set\//);
+  });

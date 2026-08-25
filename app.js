@@ -129,19 +129,6 @@ function applyLanguage() {
   renderKit();
 }
 
-async function postJson(path, payload = {}) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await response.json();
-  if (!response.ok || !data.ok) {
-    throw new Error(data.error || "Request failed.");
-  }
-  return data;
-}
-
 function inputValue(id) {
   return document.getElementById(id).value.trim();
 }
@@ -149,9 +136,9 @@ function inputValue(id) {
 async function createKit() {
   setBusy(true);
   try {
-    const identity = await postJson("/api/create-did");
+    const identity = await TechnocoreBrowser.createDid();
     state.key = identity.privateKeyJwk;
-    state.kit = await postJson("/api/build-kit", {
+    state.kit = await TechnocoreBrowser.buildKit({
       privateKeyJwk: state.key,
       agentName: inputValue("agentName"),
       xHandle: inputValue("xHandle"),
