@@ -8,10 +8,15 @@ const {
   buildKit,
   publicProofFromPrivateKey,
 } = require("./lib/technocore");
+const observerTools = require("./lib/technocore-observer");
+const { IDENTITY, observeOnce } = require("./observer");
+const { loadPublicStatus } = require("./lib/observer-dashboard");
+const { loadState } = require("./lib/observer-state");
 
 const host = process.env.HOST || (process.env.CODESPACES === "true" ? "0.0.0.0" : "127.0.0.1");
 let port = Number.parseInt(process.env.PORT || process.argv[2] || "5173", 10);
 const root = __dirname;
+const observerStatePath = path.join(root, "data", "chichi-observer-state.json");
 const safeRoot = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
 const SIGNED_LOBBY_DID = "did:key:z6MkmG43WHHvGCYgJDkfgdoGK6os6YogvEPNptb9aGw9Pd8z";
 const SIGNED_LOBBY_TEXT = "chichi1031moon checking in. DID identity active. $FLOP";
@@ -81,6 +86,36 @@ async function forwardLobbyMessage(message) {
 
 async function handleApi(request, response, pathname) {
   try {
+    if (request.method === "GET" && pathname === "/api/observer/status") {
+      sendJson(response, 200, await loadPublicStatus(observerStatePath));
+      return;
+    }
+
+    if (request.method === "GET" && pathname === "/api/observer/mailbox") {
+      const state = await loadState(observerStatePath, IDENTITY);
+      const result = await observerTools.getJson(observerTools.roomUrl(process.env.TECHNOCORE_URL || "https://technocore.chat", IDENTITY.mailbox, state.mailbox.lastSeq), fetch);
+      const messages = Array.isArray(result.data.messages) ? result.data.messages : [];
+      const { mailboxMessageMetadata, classifyMailboxMessage } = observerTools;
+      const publicMessages = messages.map((message) => ({
+        seq: Number.isSafeInteger(Number(message?.seq)) ? Number(message.seq) : null,
+        timestamp: typeof message?.ts === "string" ? message.ts : null,
+        from: typeof message?.from === "string" ? message.from : null,
+        signed: typeof message?.sig === "string" && message.sig.length > 0,
+        ...classifyMailboxMessage(message),
+        content: typeof message?.text === "string" ? message.text : "",
+        metadata: mailboxMessageMetadata(IDENTITY.mailbox, message, new Date().toISOString()),
+      }));
+      sendJson(response, 200, { ok: true, newMessages: publicMessages });
+      return;
+    }
+
+    if (request.method === "POST" && pathname === "/api/observer/refresh") {
+      await observeOnce();
+      const status = await loadPublicStatus(observerStatePath);
+      sendJson(response, 200, status);
+      return;
+    }
+
     if (request.method === "GET" && pathname === "/api/lobby-nonce") {
       sendJson(response, 200, { ok: true, nonce: await readLobbyNonce() });
       return;
@@ -152,7 +187,7 @@ async function handleApi(request, response, pathname) {
 }
 
 async function handleStatic(response, pathname) {
-  const safePathname = pathname === "/" ? "/index.html" : pathname;
+  const safePathname = pathname === "/" ? "/index.html" : pathname === "/dashboard" ? "/dashboard.html" : pathname;
   const filePath = path.normalize(path.join(root, decodeURIComponent(safePathname)));
 
   if (filePath !== root && !filePath.startsWith(safeRoot)) {

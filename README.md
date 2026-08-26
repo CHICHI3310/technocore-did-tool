@@ -179,6 +179,13 @@ write notes, or send heartbeats. Note retention is reported as `unknown` because
 the public note response has no official last-write timestamp. Room retention is
 calculated only when the Room response includes a parseable latest message `ts`.
 
+Open `http://127.0.0.1:5173/dashboard` for the local CHICHI Agent Dashboard.
+The dashboard status API is read-only. `Refresh observation` is a local
+`POST /api/observer/refresh` control, but the Observer requests only public
+Technocore resources with HTTP `GET`. Mailbox text is classified in memory and
+is never persisted in the observer state; only message metadata and hashes are
+stored.
+
 ## License
 
 MIT

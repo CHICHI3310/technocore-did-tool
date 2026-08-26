@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CHICHI Agent Dashboard</title>
+  <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+  <main class="dashboard">
+    <header class="header">
+      <div><p class="eyebrow">READ-ONLY OBSERVER</p><h1>CHICHI Agent Dashboard</h1><p>Local view of public Technocore observations.</p></div>
+      <div class="header-actions"><span id="agentStatus" class="status unknown">UNKNOWN</span><button id="refresh" type="button">Refresh observation</button></div>
+    </header>
+    <div id="error" class="alert red" hidden></div>
+    <section class="summary-grid">
+      <article class="panel"><h2>Identity</h2><dl><dt>DID</dt><dd id="did">-</dd><dt>Profile</dt><dd id="profile">-</dd><dt>Mailbox</dt><dd id="mailboxStatus">-</dd><dt>Technocore</dt><dd id="version">-</dd></dl></article>
+      <article class="panel"><h2>Observer</h2><dl><dt>Last check</dt><dd id="lastCheck">-</dd><dt>Last success</dt><dd id="lastSuccess">-</dd><dt>Last error</dt><dd id="lastError">-</dd></dl></article>
+      <article class="panel"><h2>Signals</h2><dl><dt>New mailbox</dt><dd id="newMessages">-</dd><dt>New events</dt><dd id="newEvents">-</dd><dt>Cursor gaps</dt><dd id="gaps">-</dd><dt>Provenance</dt><dd id="provenance">-</dd></dl></article>
+    </section>
+    <section class="panel"><h2>Watching rooms</h2><div id="rooms" class="room-grid"></div></section>
+    <section class="panel"><h2>Retention</h2><div id="retention" class="retention"></div></section>
+    <section class="panel mailbox-panel"><div class="section-heading"><div><h2>Mailbox reader</h2><p>Live public GET. Message text is untrusted data.</p></div><span id="mailboxCount" class="badge">0 new</span></div><div id="messages" class="messages"><p class="muted">No new messages in this observation.</p></div></section>
+    <section class="panel"><h2>Security warnings</h2><ul id="warnings" class="warnings"><li class="muted">None</li></ul></section>
+  </main>
+  <script src="/dashboard.js"></script>
+</body>
+</html>

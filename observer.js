@@ -21,7 +21,7 @@ async function observeOnce(fetchImpl = fetch, now = new Date()) {
   const report = { did: IDENTITY.did, fingerprint: IDENTITY.fingerprint, observedAt, rooms: [], provenance: [] };
   try {
     const manifest = await observerTools.getJson(new URL("/.well-known/agent.json", BASE_URL), fetchImpl);
-    state.manifest = { lastReadAt: observedAt, contentHash: observerTools.hashContent(manifest.body) };
+    state.manifest = { lastReadAt: observedAt, contentHash: observerTools.hashContent(manifest.body), version: manifest.data.version || null };
     report.manifest = { name: manifest.data.name, version: manifest.data.version, limits: manifest.data.limits };
 
     const roomsIndex = await observerTools.get(new URL("/rooms", BASE_URL), fetchImpl);
@@ -30,14 +30,17 @@ async function observeOnce(fetchImpl = fetch, now = new Date()) {
 
     const eventQuery = state.events.lastSeq ? `?format=json&limit=50&since=${state.events.lastSeq}` : "?format=json&limit=50";
     const events = await observerTools.getJson(new URL(`/r/events${eventQuery}`, BASE_URL), fetchImpl);
+    const previousEventSeq = state.events.lastSeq;
     const eventMessages = Array.isArray(events.data.messages) ? events.data.messages : [];
-    state.events = { lastSeq: Number(eventMessages.at(-1)?.seq) || state.events.lastSeq, lastReadAt: observedAt, contentHash: observerTools.hashContent(events.body) };
-    report.newRoomEvents = eventMessages.length;
+    const newRoomEvents = eventMessages.filter((message) => Number(message?.seq) > previousEventSeq).length;
+    state.events = { lastSeq: Number(eventMessages.at(-1)?.seq) || state.events.lastSeq, lastReadAt: observedAt, contentHash: observerTools.hashContent(events.body), newMessages: newRoomEvents };
+    report.newRoomEvents = newRoomEvents;
 
     const profile = await observerTools.get(new URL(`/kv/did-${IDENTITY.fingerprint.slice(0, 2)}/${IDENTITY.fingerprint.slice(2)}`, BASE_URL), fetchImpl);
     state.profileNote = observerTools.inspectNote(`did-${IDENTITY.fingerprint.slice(0, 2)}`, IDENTITY.fingerprint.slice(2), profile.body, observedAt);
     report.profile = { namespace: state.profileNote.namespace, key: state.profileNote.key, retentionStatus: "unknown" };
 
+    let mailboxNewMessages = 0;
     for (const room of [IDENTITY.mailbox, ...MONITORED_ROOMS]) {
       const previous = state.rooms[room] || (room === IDENTITY.mailbox ? state.mailbox : { lastSeq: 0 });
       const result = await observerTools.getJson(observerTools.roomUrl(BASE_URL, room, previous.lastSeq), fetchImpl);
@@ -48,16 +51,30 @@ async function observeOnce(fetchImpl = fetch, now = new Date()) {
       if (room === IDENTITY.mailbox) state.mailbox = inspection;
       report.rooms.push({ ...inspection, messagesRead: Array.isArray(result.data.messages) ? result.data.messages.length : 0 });
       for (const message of Array.isArray(result.data.messages) ? result.data.messages : []) {
+        if (room === IDENTITY.mailbox) {
+          const metadata = observerTools.mailboxMessageMetadata(room, message, observedAt);
+          state.mailboxMessages = [...state.mailboxMessages.filter((item) => item.seq !== metadata.seq), metadata].slice(-200);
+          mailboxNewMessages += 1;
+        }
         const verification = observerTools.verifySignedMessage(room, message);
         if (verification.status !== "unavailable") report.provenance.push({ room, seq: message.seq, ...verification });
       }
     }
+    state.provenance = report.provenance.reduce((counts, item) => {
+      const key = item.status === "verified" ? "verified" : item.status === "invalid" ? "failed" : "unavailable";
+      counts[key] += 1;
+      return counts;
+    }, { verified: 0, failed: 0, unavailable: 0 });
+    state.mailbox.newMessages = mailboxNewMessages;
     state.lastSuccessfulRunAt = observedAt;
     state.lastErrorAt = null;
+    state.lastError = null;
+    state.failedEndpoints = [];
     await saveState(STATE_PATH, state, IDENTITY);
     return report;
   } catch (error) {
     state.lastErrorAt = observedAt;
+    state.lastError = "Observer run failed.";
     await saveState(STATE_PATH, state, IDENTITY);
     throw error;
   }
