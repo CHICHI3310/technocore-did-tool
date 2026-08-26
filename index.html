@@ -113,6 +113,52 @@
         <div class="section-title">
           <span class="step">3</span>
           <div>
+            <h2 data-i18n="lobbyTitle">Signed lobby message</h2>
+            <p data-i18n="lobbyText">Use the imported existing DID to sign the fixed lobby check-in locally.</p>
+          </div>
+        </div>
+        <div class="output-grid">
+          <div>
+            <span class="label" data-i18n="lobbyMessageLabel">Message</span>
+            <code id="lobbyMessageOut">chichi1031moon checking in. DID identity active. $FLOP</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="lobbyNonceLabel">Nonce</span>
+            <code id="lobbyNonceOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="diagnosticSourceLabel">Source</span>
+            <code id="diagnosticSourceOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="localApiResultLabel">Local API result</span>
+            <code id="localApiResultOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="technocoreStatusLabel">Technocore status</span>
+            <code id="technocoreStatusOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="technocoreBodyLabel">Technocore response body</span>
+            <code id="technocoreBodyOut">-</code>
+          </div>
+          <div>
+            <span class="label" data-i18n="diagnosticErrorLabel">Error</span>
+            <code id="diagnosticErrorOut">-</code>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="postLobbyButton" class="primary" type="button" disabled>
+            <span aria-hidden="true">↗</span>
+            <span data-i18n="postLobby">Post signed message</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="step">4</span>
+          <div>
             <h2 data-i18n="publishTitle">Publish steps</h2>
             <p data-i18n="publishText">Follow these in order: create DID, join Technocore, register contribution, then share it.</p>
           </div>
@@ -125,7 +171,7 @@
 
       <section class="panel">
         <div class="section-title">
-          <span class="step">4</span>
+          <span class="step">5</span>
           <div>
             <h2 data-i18n="shareTitle">X share text</h2>
             <p data-i18n="shareText">Copy this short text for X. Use the detailed proof below for README or video descriptions.</p>
@@ -147,7 +193,7 @@
 
       <section class="panel wide">
         <div class="section-title">
-          <span class="step">5</span>
+          <span class="step">6</span>
           <div>
             <h2 data-i18n="exportTitle">Detailed proof export</h2>
             <p data-i18n="exportText">Save this for README, video descriptions, forms, or your own records.</p>

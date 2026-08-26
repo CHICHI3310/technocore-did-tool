@@ -135,3 +135,45 @@ test("rebuilds a kit in the browser without creating a new DID", async () => {
     assert.equal(kit.profileNote.key, identity.fingerprint.slice(2));
     assert.match(kit.contributionNote.url, /\/kv\/contrib\/[a-f0-9]{16}\/set\//);
   });
+
+test("posts only the public signed lobby envelope", async () => {
+  const context = { window: {}, crypto: crypto.webcrypto, atob, btoa, TextEncoder, URL };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync("lib/technocore-browser.js", "utf8"), context);
+  let request;
+  const response = await context.window.TechnocoreBrowser.postSignedLobbyMessage({
+    did: context.window.TechnocoreBrowser.SIGNED_LOBBY_DID,
+    sig: "a".repeat(86),
+    nonce: "1787699669000",
+    text: context.window.TechnocoreBrowser.SIGNED_LOBBY_TEXT,
+  }, async (url, options) => {
+    request = { url, options };
+    return { ok: true };
+  });
+
+  assert.equal(response.ok, true);
+  assert.equal(request.url, "https://technocore.chat/r/lobby");
+  assert.deepEqual(JSON.parse(request.options.body), {
+    did: context.window.TechnocoreBrowser.SIGNED_LOBBY_DID,
+    sig: "a".repeat(86),
+    nonce: "1787699669000",
+    text: context.window.TechnocoreBrowser.SIGNED_LOBBY_TEXT,
+  });
+  assert.equal(request.options.method, "POST");
+  assert.equal(request.options.body.includes("privateKeyJwk"), false);
+});
+
+test("rejects a non-required DID for the fixed lobby message", async () => {
+  const context = { window: {}, crypto: crypto.webcrypto, atob, btoa, TextEncoder, URL };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync("lib/technocore-browser.js", "utf8"), context);
+  await assert.rejects(
+    context.window.TechnocoreBrowser.buildSignedLobbyMessage({
+      kty: "OKP",
+      crv: "Ed25519",
+      x: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      d: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    }, "1787699669000"),
+    /required lobby DID/,
+  );
+});

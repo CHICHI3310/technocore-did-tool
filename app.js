@@ -15,6 +15,17 @@ const i18n = {
     createDid: "Create DID and proof kit",
     downloadKey: "Download private key",
     importKey: "Import private key",
+    lobbyTitle: "Signed lobby message",
+    lobbyText: "Use the imported existing DID to sign the fixed lobby check-in locally.",
+    lobbyMessageLabel: "Message",
+    lobbyNonceLabel: "Nonce",
+    postLobby: "Post signed message",
+    lobbyPosted: "Signed lobby message posted.",
+    localApiResultLabel: "Local API result",
+    technocoreStatusLabel: "Technocore status",
+    technocoreBodyLabel: "Technocore response body",
+    diagnosticSourceLabel: "Source",
+    diagnosticErrorLabel: "Error",
     identityTitle: "Identity",
     identityText: "Your DID and public profile note.",
     fingerprint: "Fingerprint",
@@ -59,6 +70,17 @@ const i18n = {
     createDid: "DID ve proof kit oluştur",
     downloadKey: "Private key indir",
     importKey: "Private key içe aktar",
+    lobbyTitle: "Signed lobby mesajı",
+    lobbyText: "İçe aktarılan mevcut DID ile sabit lobby mesajını local olarak imzala.",
+    lobbyMessageLabel: "Mesaj",
+    lobbyNonceLabel: "Nonce",
+    postLobby: "Signed mesaj gönder",
+    lobbyPosted: "Signed lobby mesajı gönderildi.",
+    localApiResultLabel: "Local API sonucu",
+    technocoreStatusLabel: "Technocore durumu",
+    technocoreBodyLabel: "Technocore yanıt gövdesi",
+    diagnosticSourceLabel: "Kaynak",
+    diagnosticErrorLabel: "Hata",
     identityTitle: "Kimlik",
     identityText: "DID ve public profile note bilgilerin.",
     fingerprint: "Fingerprint",
@@ -95,7 +117,10 @@ const state = {
   lang: localStorage.getItem("lang") || "en",
   key: null,
   kit: null,
+  identity: null,
   exportTab: "markdown",
+  lobbyPosted: false,
+  lobbyPosting: false,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -105,6 +130,14 @@ const elements = {
   downloadKeyButton: $("#downloadKeyButton"),
   importKeyButton: $("#importKeyButton"),
   importKeyInput: $("#importKeyInput"),
+  postLobbyButton: $("#postLobbyButton"),
+  lobbyMessageOut: $("#lobbyMessageOut"),
+  lobbyNonceOut: $("#lobbyNonceOut"),
+  localApiResultOut: $("#localApiResultOut"),
+  technocoreStatusOut: $("#technocoreStatusOut"),
+  technocoreBodyOut: $("#technocoreBodyOut"),
+  diagnosticSourceOut: $("#diagnosticSourceOut"),
+  diagnosticErrorOut: $("#diagnosticErrorOut"),
   copyShareButton: $("#copyShareButton"),
   copyExportButton: $("#copyExportButton"),
   downloadExportButton: $("#downloadExportButton"),
@@ -142,6 +175,7 @@ async function createKit() {
   try {
     const identity = await TechnocoreBrowser.createDid();
     state.key = identity.privateKeyJwk;
+    state.identity = identity;
     state.kit = await TechnocoreBrowser.buildKit({
       privateKeyJwk: state.key,
       agentName: inputValue("agentName"),
@@ -179,17 +213,24 @@ async function importKey(file) {
     }
     const derivedDid = TechnocoreBrowser.didFromPublicJwk(privateKeyJwk);
     if (derivedDid !== imported.did) throw new Error("DID does not match the private key.");
+    if (derivedDid !== TechnocoreBrowser.SIGNED_LOBBY_DID) {
+      throw new Error("Import the existing DID required for the lobby message.");
+    }
 
     state.key = privateKeyJwk;
-    state.kit = await TechnocoreBrowser.buildKit({
-      privateKeyJwk,
-      agentName: inputValue("agentName"),
-      xHandle: inputValue("xHandle"),
-      contributionType: inputValue("contributionType"),
-      guideUrl: inputValue("guideUrl"),
-      contributionSummary: inputValue("contributionSummary"),
-      baseUrl: inputValue("baseUrl"),
-    });
+    state.identity = await TechnocoreBrowser.identityFromPrivateKey(privateKeyJwk);
+    state.kit = null;
+    if (inputValue("contributionType") && inputValue("contributionSummary")) {
+      state.kit = await TechnocoreBrowser.buildKit({
+        privateKeyJwk,
+        agentName: inputValue("agentName"),
+        xHandle: inputValue("xHandle"),
+        contributionType: inputValue("contributionType"),
+        guideUrl: inputValue("guideUrl"),
+        contributionSummary: inputValue("contributionSummary"),
+        baseUrl: inputValue("baseUrl"),
+      });
+    }
     renderKit();
     showToast(t("created"));
   } catch (error) {
@@ -203,6 +244,53 @@ async function importKey(file) {
 function setBusy(isBusy) {
   elements.createButton.disabled = isBusy;
   elements.importKeyButton.disabled = isBusy;
+  elements.postLobbyButton.disabled = isBusy || !state.key || state.lobbyPosted || state.lobbyPosting;
+}
+
+async function nextLobbyNonce() {
+  const response = await fetch("/api/lobby-nonce", { cache: "no-store" });
+  if (!response.ok) throw new Error("Could not read the lobby history.");
+  const data = await response.json();
+  if (!data.ok || !/^\d{1,19}$/.test(String(data.nonce))) throw new Error("Could not determine a valid lobby nonce.");
+  return data.nonce;
+}
+
+async function postLobbyMessage() {
+  if (!state.key || state.lobbyPosted || state.lobbyPosting) return;
+  state.lobbyPosting = true;
+  setBusy(true);
+  try {
+    const nonce = await nextLobbyNonce();
+    elements.lobbyNonceOut.textContent = nonce;
+    const message = await TechnocoreBrowser.buildSignedLobbyMessage(state.key, nonce);
+    const response = await fetch("/api/post-signed-lobby", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+    });
+    const result = await response.json();
+    elements.diagnosticSourceOut.textContent = result.source || "local";
+    elements.localApiResultOut.textContent = response.ok ? "success" : "failed";
+    elements.technocoreStatusOut.textContent = result.status || response.status;
+    elements.technocoreBodyOut.textContent = result.body || "(empty)";
+    elements.diagnosticErrorOut.textContent = result.error || "(none)";
+    if (!response.ok || !result.ok) throw new Error(`Technocore rejected the signed lobby message (${result.status || response.status}).`);
+    state.lobbyPosted = true;
+    showToast(t("lobbyPosted"));
+  } catch (error) {
+    if (elements.localApiResultOut.textContent === "-") {
+      elements.localApiResultOut.textContent = "failed";
+      elements.diagnosticSourceOut.textContent = "local";
+      elements.technocoreStatusOut.textContent = "unavailable";
+      elements.technocoreBodyOut.textContent = "(empty)";
+      elements.diagnosticErrorOut.textContent = error.message;
+    }
+    showToast(error.message);
+  } finally {
+    state.key = null;
+    state.lobbyPosting = false;
+    renderKit();
+  }
 }
 
 function urlRows() {
@@ -233,8 +321,9 @@ function urlRows() {
 
 function renderKit() {
   const kit = state.kit;
-  elements.didOut.textContent = kit ? kit.did : "-";
-  elements.fingerprintOut.textContent = kit ? kit.fingerprint : "-";
+  const identity = state.identity || kit;
+  elements.didOut.textContent = identity ? identity.did : "-";
+  elements.fingerprintOut.textContent = identity ? identity.fingerprint : "-";
   elements.mailboxOut.textContent = kit ? `/r/${kit.mailbox}` : "-";
   elements.urlList.classList.toggle("empty", !kit);
   elements.urlList.innerHTML = urlRows();
@@ -253,6 +342,7 @@ function renderKit() {
   }
 
   elements.downloadKeyButton.disabled = !state.key;
+  elements.postLobbyButton.disabled = !state.key || state.lobbyPosted || state.lobbyPosting;
   elements.copyShareButton.disabled = !kit;
   elements.copyExportButton.disabled = !kit;
   elements.downloadExportButton.disabled = !kit;
@@ -292,6 +382,7 @@ function showToast(message) {
 
 elements.createButton.addEventListener("click", createKit);
 elements.importKeyButton.addEventListener("click", () => elements.importKeyInput.click());
+elements.postLobbyButton.addEventListener("click", postLobbyMessage);
 elements.importKeyInput.addEventListener("change", () => {
   const [file] = elements.importKeyInput.files;
   if (file) importKey(file);
