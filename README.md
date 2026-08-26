@@ -164,6 +164,21 @@ npm start
 npm test
 ```
 
+## Read-only CHICHI Observer
+
+The Observer uses the existing CHICHI DID, profile note, and mailbox. It only
+performs public `GET` requests and stores cursors, timestamps, hashes, and
+retention results locally in `data/chichi-observer-state.json`.
+
+```bash
+npm run observer
+```
+
+It does not create a DID, read a private key, sign, post, send Mailbox messages,
+write notes, or send heartbeats. Note retention is reported as `unknown` because
+the public note response has no official last-write timestamp. Room retention is
+calculated only when the Room response includes a parseable latest message `ts`.
+
 ## License
 
 MIT

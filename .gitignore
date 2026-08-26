@@ -1,3 +1,5 @@
 node_modules/
 .DS_Store
 npm-debug.log*
+data/chichi-observer-state.json
+data/*.tmp

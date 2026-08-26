@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node scripts/start.js",
+    "observer": "node observer.js --once",
     "test": "node --test"
   },
   "engines": {
