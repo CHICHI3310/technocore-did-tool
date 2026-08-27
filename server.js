@@ -11,7 +11,8 @@ const {
 const observerTools = require("./lib/technocore-observer");
 const { IDENTITY, observeOnce } = require("./observer");
 const { loadPublicStatus } = require("./lib/observer-dashboard");
-const { loadState } = require("./lib/observer-state");
+const { loadState, saveState } = require("./lib/observer-state");
+const { RetentionKeeper, RESOURCE_ALLOWLIST } = require("./lib/retention-keeper");
 
 const host = process.env.HOST || (process.env.CODESPACES === "true" ? "0.0.0.0" : "127.0.0.1");
 let port = Number.parseInt(process.env.PORT || process.argv[2] || "5173", 10);
@@ -21,6 +22,7 @@ const safeRoot = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
 const SIGNED_LOBBY_DID = "did:key:z6MkmG43WHHvGCYgJDkfgdoGK6os6YogvEPNptb9aGw9Pd8z";
 const SIGNED_LOBBY_TEXT = "chichi1031moon checking in. DID identity active. $FLOP";
 let lobbyForwarded = false;
+const retentionKeeper = new RetentionKeeper({ writeEnabled: false });
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -45,6 +47,39 @@ function send(response, statusCode, body, contentType = "text/plain; charset=utf
 
 function sendJson(response, statusCode, payload) {
   send(response, statusCode, JSON.stringify(payload), "application/json; charset=utf-8");
+}
+
+function validKeeperRequest(request) {
+  const host = String(request.headers.host || "");
+  const origin = request.headers.origin;
+  if (!host || host.includes("@") || host.includes("/")) return false;
+  if (!origin) return ["localhost", "127.0.0.1", "[::1]"].includes(host.split(":")[0]);
+  try {
+    const originUrl = new URL(origin);
+    return ["http:", "https:"].includes(originUrl.protocol) && originUrl.host === host;
+  } catch {
+    return false;
+  }
+}
+
+function validJsonRequest(request) {
+  return String(request.headers["content-type"] || "").split(";", 1)[0].trim().toLowerCase() === "application/json";
+}
+
+async function saveKeeperResult(resourceId, result) {
+  const state = await loadState(observerStatePath, IDENTITY);
+  const resource = state.keeper.resources[resourceId];
+  if (resource) {
+    resource.lastResult = result.status;
+    resource.httpStatus = result.httpStatus ?? null;
+    resource.conflict = result.status === "CONFLICT";
+    if (result.observedHash) resource.observedHash = result.observedHash;
+    if (result.currentValueMatch) resource.currentValueMatch = result.currentValueMatch;
+    if (result.status !== "WRITE_DISABLED") resource.lastCheckedAt = resource.lastCheckedAt || new Date().toISOString();
+    if (result.lastVerifiedMaintenanceAt) resource.lastVerifiedMaintenanceAt = result.lastVerifiedMaintenanceAt;
+  }
+  state.keeper.status = result.status;
+  await saveState(observerStatePath, state, IDENTITY);
 }
 
 async function readJson(request) {
@@ -86,6 +121,37 @@ async function forwardLobbyMessage(message) {
 
 async function handleApi(request, response, pathname) {
   try {
+    if (pathname === "/api/keeper/check" || pathname === "/api/keeper/confirm") {
+      if (request.method !== "POST" || !validKeeperRequest(request) || !validJsonRequest(request)) {
+        sendJson(response, 403, { ok: false, status: "FAILED", error: "Keeper request rejected." });
+        return;
+      }
+      const body = await readJson(request);
+      const expectedKeys = pathname.endsWith("/check") ? ["resourceId"] : ["confirmationToken"];
+      if (Object.keys(body).sort().join(",") !== expectedKeys.join(",")) {
+        sendJson(response, 400, { ok: false, status: "FAILED", error: "Invalid Keeper request." });
+        return;
+      }
+      if (pathname.endsWith("/check")) {
+        if (typeof body.resourceId !== "string" || !RESOURCE_ALLOWLIST[body.resourceId]) {
+          sendJson(response, 400, { ok: false, status: "FAILED", error: "Keeper resource is not allowlisted." });
+          return;
+        }
+        const result = await retentionKeeper.check(body.resourceId);
+        await saveKeeperResult(body.resourceId, result);
+        sendJson(response, result.status === "FAILED" ? 409 : 200, { ok: result.status !== "FAILED", liveWrite: "DISABLED", ...result });
+        return;
+      }
+      if (typeof body.confirmationToken !== "string" || body.confirmationToken.length !== 64) {
+        sendJson(response, 400, { ok: false, status: "FAILED", error: "Invalid confirmation token." });
+        return;
+      }
+      const result = await retentionKeeper.confirm(body.confirmationToken);
+      if (result.resourceId) await saveKeeperResult(result.resourceId, result);
+      sendJson(response, result.status === "VERIFIED" || result.status === "WRITE_DISABLED" ? 200 : 409, { ok: result.status === "VERIFIED" || result.status === "WRITE_DISABLED", liveWrite: "DISABLED", ...result });
+      return;
+    }
+
     if (request.method === "GET" && pathname === "/api/observer/status") {
       sendJson(response, 200, await loadPublicStatus(observerStatePath));
       return;
@@ -234,3 +300,5 @@ server.listen(port, host, () => {
   const shownHost = host === "0.0.0.0" ? "127.0.0.1" : host;
   console.log(`Technocore DID Tool running at http://${shownHost}:${port}`);
 });
+
+module.exports = { server, validJsonRequest, validKeeperRequest };

@@ -51,6 +51,70 @@ function renderStatus(data) {
     item.className = warning === "None" ? "muted" : "red";
     return item;
   }));
+  renderKeeper(data.keeper);
+}
+
+function renderKeeper(keeper) {
+  const data = keeper || { status: "IDLE", resources: {} };
+  text("keeperStatus", data.status || "IDLE");
+  const resources = data.resources || {};
+  $("keeperResources").replaceChildren(...["profile", "contribution"].map((resourceId) => {
+    const resource = resources[resourceId] || {};
+    const node = document.createElement("article");
+    node.className = "keeper-resource";
+    node.innerHTML = `<h3></h3><dl><dt>Resource</dt><dd class="resource-path"></dd><dt>Retention</dt><dd class="retention-value"></dd><dt>Last verified maintenance</dt><dd class="verified-at"></dd><dt>Local maintenance target</dt><dd class="local-target"></dd><dt>Current value match</dt><dd class="value-match"></dd></dl><div class="keeper-actions"><button type="button" class="check-maintenance">Check maintenance</button><button type="button" class="confirm-maintenance" disabled>Confirm maintenance</button></div><p class="keeper-message muted"></p>`;
+    node.querySelector("h3").textContent = resourceId === "profile" ? "Profile" : "Contribution";
+    node.querySelector(".resource-path").textContent = `${resource.namespace || "-"}/${resource.key || "-"}`;
+    node.querySelector(".retention-value").textContent = String(resource.retentionStatus || "UNKNOWN").toUpperCase();
+    node.querySelector(".verified-at").textContent = resource.lastVerifiedMaintenanceAt ? `${date(resource.lastVerifiedMaintenanceAt)} (local Keeper time)` : "UNKNOWN";
+    node.querySelector(".local-target").textContent = resource.localMaintenanceTarget || resourceId;
+    node.querySelector(".value-match").textContent = resource.currentValueMatch || "UNKNOWN";
+    node.querySelector(".check-maintenance").addEventListener("click", () => checkKeeper(node, resourceId));
+    node.querySelector(".confirm-maintenance").addEventListener("click", () => confirmKeeper(node));
+    return node;
+  }));
+}
+
+async function checkKeeper(node, resourceId) {
+  const check = node.querySelector(".check-maintenance");
+  const confirm = node.querySelector(".confirm-maintenance");
+  const message = node.querySelector(".keeper-message");
+  check.disabled = true;
+  confirm.disabled = true;
+  message.textContent = "Checking...";
+  try {
+    const response = await fetch("/api/keeper/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resourceId }), cache: "no-store" });
+    const result = await response.json();
+    if (!response.ok || !result.ok || result.status !== "READY") throw new Error(result.error || "Maintenance check failed.");
+    confirm.dataset.token = result.confirmationToken || "";
+    confirm.disabled = !confirm.dataset.token;
+    message.textContent = `Current value: ${result.currentValueMatch}. Confirm maintenance to continue.`;
+  } catch (error) {
+    message.textContent = error.message;
+  } finally {
+    check.disabled = false;
+  }
+}
+
+async function confirmKeeper(node) {
+  const check = node.querySelector(".check-maintenance");
+  const confirm = node.querySelector(".confirm-maintenance");
+  const message = node.querySelector(".keeper-message");
+  const confirmationToken = confirm.dataset.token;
+  if (!confirmationToken) return;
+  check.disabled = true;
+  confirm.disabled = true;
+  message.textContent = "Confirming... LIVE WRITE: DISABLED";
+  try {
+    const response = await fetch("/api/keeper/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirmationToken }), cache: "no-store" });
+    const result = await response.json();
+    message.textContent = result.status === "WRITE_DISABLED" ? "LIVE WRITE: DISABLED. No Technocore write was attempted." : (result.error || result.status);
+  } catch (error) {
+    message.textContent = error.message;
+  } finally {
+    delete confirm.dataset.token;
+    await loadDashboard();
+  }
 }
 
 function retentionItem(label, value) {
