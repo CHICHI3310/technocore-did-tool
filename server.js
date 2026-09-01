@@ -13,6 +13,8 @@ const { IDENTITY, observeOnce } = require("./observer");
 const { loadPublicStatus } = require("./lib/observer-dashboard");
 const { loadState, saveState } = require("./lib/observer-state");
 const { RetentionKeeper, RESOURCE_ALLOWLIST } = require("./lib/retention-keeper");
+const { createLocalSignerState, safeHealthResponse, safeSignResponse, validateSignerRequest } = require("./lib/local-signer");
+const { buildReplyDraft, createConversationState, getNewPublicRoomMessages } = require("./lib/agent-conversation");
 
 const host = process.env.HOST || (process.env.CODESPACES === "true" ? "0.0.0.0" : "127.0.0.1");
 let port = Number.parseInt(process.env.PORT || process.argv[2] || "5173", 10);
@@ -23,6 +25,7 @@ const SIGNED_LOBBY_DID = "did:key:z6MkmG43WHHvGCYgJDkfgdoGK6os6YogvEPNptb9aGw9Pd
 const SIGNED_LOBBY_TEXT = "chichi1031moon checking in. DID identity active. $FLOP";
 let lobbyForwarded = false;
 const retentionKeeper = new RetentionKeeper({ writeEnabled: false });
+const localSignerState = createLocalSignerState();
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -152,6 +155,34 @@ async function handleApi(request, response, pathname) {
       return;
     }
 
+    if (request.method === "GET" && pathname === "/api/agent/draft") {
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      const room = url.searchParams.get("room") || "lobby";
+      const allowedRooms = new Set(["lobby", "technocore", "agent-security", "flop-collective", "flop_labs"]);
+      if (!allowedRooms.has(room)) {
+        sendJson(response, 400, { ok: false, status: "INVALID_ROOM", error: "Only public monitored rooms are allowed for draft generation.", liveWrite: "DISABLED" });
+        return;
+      }
+      const lastSeq = Number.parseInt(url.searchParams.get("since") || "0", 10);
+      const state = createConversationState(room, lastSeq);
+      const result = await getNewPublicRoomMessages(process.env.TECHNOCORE_URL || "https://technocore.chat", room, state, fetch);
+      const drafts = result.messages.map((message) => buildReplyDraft({
+        room,
+        message,
+        publicAgent: { did: IDENTITY.did, fingerprint: IDENTITY.fingerprint },
+      }));
+      sendJson(response, 200, {
+        ok: true,
+        room,
+        since: lastSeq,
+        lastSeq: result.lastSeq,
+        draftCount: drafts.length,
+        drafts,
+        liveWrite: "DISABLED",
+      });
+      return;
+    }
+
     if (request.method === "GET" && pathname === "/api/observer/status") {
       sendJson(response, 200, await loadPublicStatus(observerStatePath));
       return;
@@ -224,19 +255,49 @@ async function handleApi(request, response, pathname) {
     }
 
     if (request.method === "POST" && pathname === "/api/create-did") {
-      sendJson(response, 200, { ok: true, ...createDid() });
+      sendJson(response, 410, {
+        ok: false,
+        status: "LEGACY_ROUTE_DISABLED",
+        error: "Key-creation routes are disabled. Use the local browser app or the signer-only flow.",
+        liveWrite: "DISABLED",
+      });
       return;
     }
 
-    if (request.method === "POST" && pathname === "/api/build-kit") {
-      const body = await readJson(request);
-      sendJson(response, 200, { ok: true, ...buildKit(body) });
+    if (request.method === "GET" && pathname === "/api/signer/health") {
+      sendJson(response, 200, safeHealthResponse({
+        mode: localSignerState.mode,
+        host: localSignerState.host,
+        port: localSignerState.port,
+      }));
       return;
     }
 
-    if (request.method === "POST" && pathname === "/api/public-proof") {
-      const body = await readJson(request);
-      sendJson(response, 200, { ok: true, ...publicProofFromPrivateKey(body.privateKeyJwk) });
+    if (request.method === "POST" && pathname === "/api/signer/sign") {
+      try {
+        const body = await readJson(request);
+        validateSignerRequest(body);
+        const result = safeSignResponse(body);
+        sendJson(response, 200, result);
+        return;
+      } catch (error) {
+        sendJson(response, 400, {
+          ok: false,
+          status: "INVALID_SIGNER_REQUEST",
+          error: error.message,
+          liveWrite: "DISABLED",
+        });
+        return;
+      }
+    }
+
+    if (request.method === "POST" && (pathname === "/api/build-kit" || pathname === "/api/public-proof")) {
+      sendJson(response, 410, {
+        ok: false,
+        status: "LEGACY_ROUTE_DISABLED",
+        error: "Legacy private-key routes are disabled. Use the local signer-only flow instead.",
+        liveWrite: "DISABLED",
+      });
       return;
     }
 

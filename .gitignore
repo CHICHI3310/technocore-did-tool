@@ -3,3 +3,18 @@ node_modules/
 npm-debug.log*
 data/chichi-observer-state.json
 data/*.tmp
+
+# Local credentials and DID key material must never enter Git.
+.env
+.env.*
+.secrets/
+.keys/
+secrets/
+private-keys/
+**/*private*key*.json
+**/*secret*.json
+**/*credential*.json
+**/*seed*.json
+**/*.pem
+**/*.key
+.claude/settings.local.json
